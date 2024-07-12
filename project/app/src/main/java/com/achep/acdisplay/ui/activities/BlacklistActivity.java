@@ -77,7 +77,7 @@ public class BlacklistActivity extends PreferenceActivity {
             "com.achep.acdisplay.blacklist.FRAGMENT_CLASS";
     private static final String META_DATA_KEY_PARENT_TITLE =
             "com.achep.acdisplay.blacklist.PARENT_FRAGMENT_TITLE";
-    private static final String META_DATA_KEY_PARENT_FRAGMENT_CLASS =
+    private static final String META_KEY_PF_CLASS =
             "com.achep.acdisplay.blacklist.PARENT_FRAGMENT_CLASS";
 
     // save state
@@ -284,7 +284,7 @@ public class BlacklistActivity extends PreferenceActivity {
 
                 mParentHeader = new Header();
                 mParentHeader.fragment
-                        = parentInfo.metaData.getString(META_DATA_KEY_PARENT_FRAGMENT_CLASS);
+                        = parentInfo.metaData.getString(META_KEY_PF_CLASS);
                 mParentHeader.title = parentInfo.metaData.getString(META_DATA_KEY_PARENT_TITLE);
             }
         } catch (NameNotFoundException nnfe) {
@@ -422,7 +422,7 @@ public class BlacklistActivity extends PreferenceActivity {
 
             // Check if it has a parent specified and create a Header object
             final int parentHeaderTitleRes = ai.metaData.getInt(META_DATA_KEY_PARENT_TITLE);
-            String parentFragmentClass = ai.metaData.getString(META_DATA_KEY_PARENT_FRAGMENT_CLASS);
+            String parentFragmentClass = ai.metaData.getString(META_KEY_PF_CLASS);
             if (parentFragmentClass != null) {
                 mParentHeader = new Header();
                 mParentHeader.fragment = parentFragmentClass;
