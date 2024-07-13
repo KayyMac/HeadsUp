@@ -46,6 +46,7 @@ import com.achep.base.dashboard.DashboardCategory;
 import com.achep.base.dashboard.DashboardTile;
 import com.achep.base.ui.fragments.DashboardFragment;
 import com.achep.base.utils.xml.XmlUtils;
+import com.achep.base.ui.activities.PreferencePanelParams;
 
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
@@ -365,39 +366,27 @@ public abstract class SettingsActivity extends ActivityBase implements
     }
 
     /**
-     * Start a new fragment containing a preference panel.  If the preferences
+     * Start a new fragment containing a preference panel. If the preferences
      * are being displayed in multi-pane mode, the given fragment class will
-     * be instantiated and placed in the appropriate pane.  If running in
+     * be instantiated and placed in the appropriate pane. If running in
      * single-pane mode, a new activity will be launched in which to show the
      * fragment.
      *
-     * @param fragmentClass     Full name of the class implementing the fragment.
-     * @param args              Any desired arguments to supply to the fragment.
-     * @param titleRes          Optional resource identifier of the title of this
-     *                          fragment.
-     * @param titleText         Optional text of the title of this fragment.
-     * @param resultTo          Optional fragment that result data should be sent to.
-     *                          If non-null, resultTo.onActivityResult() will be called when this
-     *                          preference panel is done.  The launched panel must use
-     *                          {@link #finishPreferencePanel(Fragment, int, Intent)} when done.
-     * @param resultRequestCode If resultTo is non-null, this is the caller's
-     *                          request code to be received with the result.
+     * @param params A PreferencePanelParams object containing all necessary parameters.
      */
-    public void startPreferencePanel(String fragmentClass, Bundle args, int titleRes,
-                                     CharSequence titleText, Fragment resultTo, int resultRequestCode) {
+    public void startPreferencePanel(PreferencePanelParams params) {
         String title = null;
-        if (titleRes < 0) {
-            if (titleText != null) {
-                title = titleText.toString();
+        if (params.getTitleRes() < 0) {
+            if (params.getTitleText() != null) {
+                title = params.getTitleText().toString();
             } else {
-                // There not much we can do in that case
                 title = "";
             }
         }
 
-        Utils.startWithFragment(this, fragmentClass, args,
-                resultTo, resultRequestCode,
-                titleRes, title, mIsShortcut);
+        Utils.startWithFragment(this, params.getFragmentClass(), params.getArgs(),
+                params.getResultTo(), params.getResultRequestCode(),
+                params.getTitleRes(), title, mIsShortcut);
     }
 
     /**
