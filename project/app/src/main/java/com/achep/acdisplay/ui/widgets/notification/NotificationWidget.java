@@ -300,111 +300,120 @@ public class NotificationWidget extends LinearLayout implements INotificatiable 
     @SuppressLint("CutPasteId")
     private void setMessageLines(@Nullable CharSequence[] lines) {
         if (lines == null) {
-            // Hide message container. Do not delete all messages
-            // because we may re-use them later.
-            mMessageContainer.removeAllViews();
+            hideMessageContainer();
             return;
         }
 
-        int[] maxlines;
+        int[] maxLines = calculateMaxLines(lines);
+        int count = Math.min(lines.length, mMessageMaxLines);
 
-        final int length = lines.length;
-        maxlines = new int[length];
+        View[] views = findAvailableViews(count);
+        removeRedundantViews(count);
 
+        populateMessageContainer(lines, maxLines, count, views);
+    }
+
+    private void hideMessageContainer() {
+        mMessageContainer.removeAllViews();
+    }
+
+    private int[] calculateMaxLines(@Nullable CharSequence[] lines) {
+        int length = lines.length;
+        int[] maxLines = new int[length];
         int freeLines = mMessageMaxLines;
-        int count = Math.min(length, freeLines);
+
         if (mMessageMaxLines > length) {
-
-            // Initial setup.
-            Arrays.fill(maxlines, 1);
+            Arrays.fill(maxLines, 1);
             freeLines -= length;
-
-            // Build list of lengths, so we don't have
-            // to recalculate it every time.
             int[] msgLengths = new int[length];
             for (int i = 0; i < length; i++) {
                 assert lines[i] != null;
                 msgLengths[i] = lines[i].length();
             }
-
-            while (freeLines > 0) {
-                int pos = 0;
-                float a = 0;
-                for (int i = 0; i < length; i++) {
-                    final float k = (float) msgLengths[i] / maxlines[i];
-                    if (k > a) {
-                        a = k;
-                        pos = i;
-                    }
-                }
-                maxlines[pos]++;
-                freeLines--;
-            }
+            distributeFreeLines(length, maxLines, freeLines, msgLengths);
         } else {
-            // Show first messages.
             for (int i = 0; freeLines > 0; freeLines--, i++) {
-                maxlines[i] = 1;
+                maxLines[i] = 1;
             }
         }
 
-        View[] views = new View[count];
+        return maxLines;
+    }
 
-        // Find available views.
+    private void distributeFreeLines(int length, int[] maxLines, int freeLines, int[] msgLengths) {
+        while (freeLines > 0) {
+            int pos = 0;
+            float maxRatio = 0;
+            for (int i = 0; i < length; i++) {
+                float ratio = (float) msgLengths[i] / maxLines[i];
+                if (ratio > maxRatio) {
+                    maxRatio = ratio;
+                    pos = i;
+                }
+            }
+            maxLines[pos]++;
+            freeLines--;
+        }
+    }
+
+    private View[] findAvailableViews(int count) {
+        View[] views = new View[count];
         int childCount = mMessageContainer.getChildCount();
-        int a = Math.min(childCount, count);
-        for (int i = 0; i < a; i++) {
+        int availableViewsCount = Math.min(childCount, count);
+
+        for (int i = 0; i < availableViewsCount; i++) {
             views[i] = mMessageContainer.getChildAt(i);
         }
 
-        // Remove redundant views.
+        return views;
+    }
+
+    private void removeRedundantViews(int count) {
+        int childCount = mMessageContainer.getChildCount();
         for (int i = childCount - 1; i >= count; i--) {
             mMessageContainer.removeViewAt(i);
         }
+    }
 
+    private void populateMessageContainer(CharSequence[] lines, int[] maxLines, int count, View[] views) {
         boolean highlightFirstLetter = count > 1;
-
         LayoutInflater inflater = null;
+
         for (int i = 0; i < count; i++) {
             View root = views[i];
 
             if (root == null) {
-                // Initialize layout inflater only when we really need it.
                 if (inflater == null) {
-                    inflater = (LayoutInflater) getContext()
-                            .getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                    inflater = (LayoutInflater) getContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
                     assert inflater != null;
                 }
 
-                root = inflater.inflate(
-                        mMessageLayoutRes,
-                        mMessageContainer, false);
-                // We need to keep all IDs unique to make
-                // TransitionManager.beginDelayedTransition(viewGroup, null)
-                // work correctly!
+                root = inflater.inflate(mMessageLayoutRes, mMessageContainer, false);
                 root.setId(mMessageContainer.getChildCount() + 1);
                 mMessageContainer.addView(root);
             }
 
-            CharSequence text;
+            CharSequence text = getTextForLine(lines[i], highlightFirstLetter);
 
-            char symbol = lines[i].charAt(0);
-            boolean isClear = Character.isLetter(symbol) || Character.isDigit(symbol);
-            if (highlightFirstLetter && isClear) {
-                SpannableString spannable = new SpannableString(lines[i]);
-                spannable.setSpan(new UnderlineSpan(), 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                text = spannable;
-            } else {
-                text = lines[i];
-            }
-
-            // Get message view and apply the content.
-            TextView textView = root instanceof TextView
-                    ? (TextView) root
-                    : (TextView) root.findViewById(R.id.message);
-            textView.setMaxLines(maxlines[i]);
+            TextView textView = root instanceof TextView ? (TextView) root : root.findViewById(R.id.message);
+            textView.setMaxLines(maxLines[i]);
             textView.setText(text);
         }
     }
+
+    private CharSequence getTextForLine(CharSequence line, boolean highlightFirstLetter) {
+        char symbol = line.charAt(0);
+        boolean isClear = Character.isLetter(symbol) || Character.isDigit(symbol);
+
+        if (highlightFirstLetter && isClear) {
+            SpannableString spannable = new SpannableString(line);
+            spannable.setSpan(new UnderlineSpan(), 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            return spannable;
+        }
+
+        return line;
+    }
+
 
     /**
      * Sets {@link #mSmallIcon icon} to track notification's small icon or
